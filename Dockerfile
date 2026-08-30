@@ -54,8 +54,7 @@ RUN pnpm deploy --filter @craig/bot --prod --legacy /opt/craig/bot \
   && cp -a apps/dashboard/build /opt/craig/dashboard/build \
   && cp -a apps/tasks/dist /opt/craig/tasks/dist \
   && cp -a packages/db/prisma /opt/craig/prisma \
-  && cp -a locale /opt/craig/locale \
-  && cp -a tsconfig.json /opt/tsconfig.json
+  && cp -a locale /opt/craig/locale
 
 # pnpm deploy drops prisma generate output; restore it from the workspace tree.
 RUN set -eu; \
@@ -109,6 +108,7 @@ RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmwa
   && npm cache clean --force
 
 COPY --from=build /opt/craig /opt/craig
+COPY --from=build /workspace/tsconfig.json /opt/tsconfig.json
 COPY --from=fdkaac /usr/local/bin/fdkaac /usr/local/bin/fdkaac
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/craig-entrypoint.sh
 COPY --chmod=755 docker/healthcheck.sh /usr/local/bin/craig-healthcheck.sh
