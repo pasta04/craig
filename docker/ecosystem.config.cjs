@@ -53,18 +53,6 @@ module.exports = {
       }
     },
     {
-      name: 'Ennuizel Streamer',
-      cwd: '/opt/craig/ennuizel-streamer',
-      script: 'dist/index.mjs',
-      wait_ready: true,
-      kill_timeout: 3000,
-      env: {
-        ...sharedEnv,
-        HOST: '0.0.0.0',
-        PORT: '9001'
-      }
-    },
-    {
       name: 'Craig Dashboard',
       cwd: '/opt/craig/dashboard',
       script: 'build/index.js',

@@ -4,7 +4,7 @@ set -eu
 pm2 jlist | node -e '
 const fs = require("node:fs");
 const processes = JSON.parse(fs.readFileSync(0, "utf8"));
-const expected = new Set(["Craig Bot", "Kitchen", "Ferret", "Ennuizel Streamer", "Craig Dashboard", "Craig Tasks"]);
+const expected = new Set(["Craig Bot", "Kitchen", "Ferret", "Craig Dashboard", "Craig Tasks"]);
 for (const proc of processes) {
   if (expected.has(proc.name) && proc.pm2_env?.status === "online") expected.delete(proc.name);
 }
@@ -18,7 +18,6 @@ node <<'NODE'
 const checks = [
   ['kitchen', 'http://127.0.0.1:9000/health'],
   ['ferret', 'http://127.0.0.1:9100/api/health'],
-  ['ennuizel-streamer', 'http://127.0.0.1:9001/health'],
   ['dashboard', 'http://127.0.0.1:9200/api/health']
 ];
 
