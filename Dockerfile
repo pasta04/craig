@@ -56,6 +56,22 @@ RUN pnpm deploy --filter @craig/bot --prod --legacy /opt/craig/bot \
   && cp -a packages/db/prisma /opt/craig/prisma \
   && cp -a locale /opt/craig/locale
 
+FROM node:22-bookworm-slim AS fdkaac
+
+# Debian bookworm の fdkaac パッケージは amd64 のみ。arm64 用にソースから作る。
+RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+    autoconf automake libtool pkg-config build-essential git ca-certificates libfdk-aac-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch v1.0.6 https://github.com/nu774/fdkaac.git /tmp/fdkaac \
+  && cd /tmp/fdkaac \
+  && autoreconf -i \
+  && ./configure --prefix=/usr/local \
+  && make -j"$(nproc)" \
+  && make install \
+  && strip /usr/local/bin/fdkaac
 FROM node:22-bookworm-slim AS runtime
 
 WORKDIR /opt/craig
@@ -65,7 +81,7 @@ RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmwa
   && apt-get install -y --no-install-recommends \
     at \
     ca-certificates \
-    fdkaac \
+    libfdk-aac2 \
     ffmpeg \
     flac \
     lame \
@@ -81,6 +97,7 @@ RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmwa
   && npm cache clean --force
 
 COPY --from=build /opt/craig /opt/craig
+COPY --from=fdkaac /usr/local/bin/fdkaac /usr/local/bin/fdkaac
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/craig-entrypoint.sh
 COPY --chmod=755 docker/healthcheck.sh /usr/local/bin/craig-healthcheck.sh
 COPY docker/ecosystem.config.cjs /opt/craig/ecosystem.config.cjs
