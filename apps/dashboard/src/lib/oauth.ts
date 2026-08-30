@@ -19,7 +19,8 @@ export const MICROSOFT_OAUTH_URL = `https://login.microsoftonline.com/common/oau
   response_type: 'code'
 })}`;
 
-export const googleScopes = ['https://www.googleapis.com/auth/drive.file'];
+// 環境変数で指定した任意の共有ドライブフォルダへ保存するため、Drive全体へのアクセスを要求する。
+export const googleScopes = ['https://www.googleapis.com/auth/drive'];
 export const GOOGLE_OAUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
   access_type: 'offline',
   scope: googleScopes.join(' '),
