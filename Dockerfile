@@ -59,8 +59,9 @@ RUN pnpm deploy --filter @craig/bot --prod --legacy /opt/craig/bot \
 # pnpm deploy drops prisma generate output; restore it from the workspace tree.
 RUN set -eu; \
   src="$(ls -d /workspace/node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client)"; \
-  for app in bot kitchen tasks; do \
-    base="$(ls -d /opt/craig/$app/node_modules/.pnpm/@prisma+client*/node_modules)"; \
+  for app in bot kitchen ferret tasks dashboard; do \
+    base="$(ls -d /opt/craig/$app/node_modules/.pnpm/@prisma+client*/node_modules 2>/dev/null || true)"; \
+    [ -n "$base" ] || continue; \
     rm -rf "$base/.prisma/client"; \
     mkdir -p "$base/.prisma"; \
     cp -a "$src" "$base/.prisma/client"; \
