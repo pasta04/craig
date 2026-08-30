@@ -83,27 +83,16 @@ export default class EntitlementsModule extends BotModule {
   }
 
   async resolveUserEntitlement(userId: string) {
-    const entitlements = await prisma.entitlement.findMany({
-      where: {
-        userId,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
-      },
-      select: {
-        tier: true
-      }
-    });
-
-    const maxTier = entitlements.some((e) => e.tier === -1) ? -1 : entitlements.reduce((max, e) => Math.max(max, e.tier), 0);
-
     return prisma.user.upsert({
       where: { id: userId },
       create: {
         id: userId,
-        rewardTier: maxTier
+        rewardTier: -1,
+        tierManuallySet: true
       },
       update: {
-        rewardTier: maxTier,
-        ...(maxTier === 0 ? { driveEnabled: false } : {})
+        rewardTier: -1,
+        tierManuallySet: true
       }
     });
   }
