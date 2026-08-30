@@ -54,7 +54,19 @@ RUN pnpm deploy --filter @craig/bot --prod --legacy /opt/craig/bot \
   && cp -a apps/dashboard/build /opt/craig/dashboard/build \
   && cp -a apps/tasks/dist /opt/craig/tasks/dist \
   && cp -a packages/db/prisma /opt/craig/prisma \
-  && cp -a locale /opt/craig/locale
+  && cp -a locale /opt/craig/locale \
+  && cp -a tsconfig.json /opt/tsconfig.json
+
+# pnpm deploy drops prisma generate output; restore it from the workspace tree.
+RUN set -eu; \
+  src="$(ls -d /workspace/node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client)"; \
+  for app in bot kitchen tasks; do \
+    base="$(ls -d /opt/craig/$app/node_modules/.pnpm/@prisma+client*/node_modules)"; \
+    rm -rf "$base/.prisma/client"; \
+    mkdir -p "$base/.prisma"; \
+    cp -a "$src" "$base/.prisma/client"; \
+  done
+
 
 FROM node:22-bookworm-slim AS fdkaac
 
