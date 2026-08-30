@@ -349,10 +349,13 @@ export default class Recording {
   }
 
   async uploadToDrive() {
-    const user = await prisma.user.findUnique({ where: { id: this.user.id } });
+    // Uploads are attributed to a single configured account so that any member
+    // can start a recording without linking their own Drive.
+    const uploaderId = process.env.UPLOAD_AS_USER_ID || this.user.id;
+    const user = await prisma.user.findUnique({ where: { id: uploaderId } });
     if (!user || !user.driveEnabled) return;
 
-    await this.recorder.uploader.upload(this.id, this.user.id, user.driveService);
+    await this.recorder.uploader.upload(this.id, uploaderId, user.driveService);
   }
 
   async connect() {
