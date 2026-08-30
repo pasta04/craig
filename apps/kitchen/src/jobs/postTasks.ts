@@ -31,12 +31,11 @@ async function cloudUpload(job: Job) {
     if (!recordingInfo) return;
     const { info } = recordingInfo;
     const startDate = new Date(info.startTime);
-    const fileName = [
-      'craig',
-      job.recordingId,
-      `${startDate.getFullYear()}-${startDate.getMonth() + 1}-${startDate.getDate()}`,
-      `${startDate.getHours()}-${startDate.getMinutes()}-${startDate.getSeconds()}`
-    ].join('_');
+    // 月と日を2桁にそろえ、録音開始日をYYYYMMDD形式にする。
+    const year = startDate.getFullYear();
+    const month = String(startDate.getMonth() + 1).padStart(2, '0');
+    const day = String(startDate.getDate()).padStart(2, '0');
+    const fileName = `${year}${month}${day}_運営会議`;
 
     if (!job.postTaskOptions?.userId) return;
     const user = await prisma.user.findUnique({ where: { id: job.postTaskOptions.userId } });
