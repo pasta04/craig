@@ -30,6 +30,7 @@ export const AVATAR_CDN = process.env.AVATAR_CDN;
 
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+export const GOOGLE_SHARED_DRIVE_FOLDER_ID = process.env.GOOGLE_SHARED_DRIVE_FOLDER_ID;
 
 export const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 export const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;

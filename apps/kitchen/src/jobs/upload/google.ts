@@ -4,7 +4,7 @@ import { GoogleDriveUser, prisma } from '@craig/db';
 import { RecordingInfo } from '@craig/types/recording';
 import { type drive_v3, google } from 'googleapis';
 
-import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from '../../util/config.js';
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_SHARED_DRIVE_FOLDER_ID } from '../../util/config.js';
 import { getRecordingDescription, UploadError } from '../../util/index.js';
 import logger from '../../util/logger.js';
 import { Job } from '../job.js';
@@ -28,6 +28,29 @@ async function findCraigDirectoryInGoogleDrive(drive: drive_v3.Drive, userId: st
     return folder.data.id;
   } catch (e) {
     logger.warn(`Failed to get Craig directory for user ${userId}`, e);
+    return null;
+  }
+}
+
+async function resolveGoogleUploadDirectory(drive: drive_v3.Drive, userId: string) {
+  if (!GOOGLE_SHARED_DRIVE_FOLDER_ID) return findCraigDirectoryInGoogleDrive(drive, userId);
+
+  try {
+    // 事前確認で設定ミスや認証ユーザーの権限不足をアップロード開始前に検出する。
+    const folder = await drive.files.get({
+      fileId: GOOGLE_SHARED_DRIVE_FOLDER_ID,
+      fields: 'id,mimeType,trashed,capabilities(canAddChildren)',
+      supportsAllDrives: true
+    });
+
+    if (folder.data.mimeType !== 'application/vnd.google-apps.folder' || folder.data.trashed || !folder.data.capabilities?.canAddChildren) {
+      logger.warn(`Configured Google Drive upload destination is not an available folder for user ${userId}`);
+      return null;
+    }
+
+    return folder.data.id;
+  } catch (e) {
+    logger.warn(`Failed to access configured Google Drive upload destination for user ${userId}`, e);
     return null;
   }
 }
@@ -61,7 +84,7 @@ export async function googlePreflight(userId: string) {
   const oAuth2Client = createOAuthClient(driveUser);
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-  const folderId = await findCraigDirectoryInGoogleDrive(drive, userId);
+  const folderId = await resolveGoogleUploadDirectory(drive, userId);
   if (!folderId) return false;
   return { folderId };
 }
@@ -74,13 +97,13 @@ export async function googleUpload(job: Job, info: RecordingInfo, fileName: stri
   const oAuth2Client = createOAuthClient(driveUser);
   const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-  const folderId =
-    job.postTaskOptions?.uploadFolderId || job.postTaskOptions?.googleFolderId || (await findCraigDirectoryInGoogleDrive(drive, userId));
+  const folderId = job.postTaskOptions?.uploadFolderId || job.postTaskOptions?.googleFolderId || (await resolveGoogleUploadDirectory(drive, userId));
   if (!folderId) throw new UploadError('Your Google authentication was invalidated, please re-authenticate.');
   const mimeType = job.getMimeType();
 
   const file = await drive.files.create({
     quotaUser: userId,
+    supportsAllDrives: true,
     requestBody: {
       name: `${fileName}.${job.getExtension()}`,
       mimeType,
