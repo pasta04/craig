@@ -116,13 +116,8 @@ export default class Recording {
   writer: RecordingWriter | null = null;
 
   timeout: any;
-  usageInterval: any;
   sizeLimit = 0;
-  lastSize = 0;
-  usedMinutes = 0;
-  unusedMinutes = 0;
   latency: number | null = null;
-  silenceWarned = false;
   maintenceWarned = false;
   latencyWarned = false;
   zeroPacketWarned = false;
@@ -252,31 +247,6 @@ export default class Recording {
       rewards.recordHours * 60 * 60 * 1000
     );
 
-    this.usageInterval = setInterval(async () => {
-      if (this.state !== RecordingState.RECORDING) return;
-      if (this.bytesWritten !== this.lastSize) {
-        this.lastSize = this.bytesWritten;
-        this.usedMinutes++;
-        this.unusedMinutes = 0;
-        return;
-      }
-
-      this.unusedMinutes++;
-      if (this.usedMinutes === 0) {
-        this.stateDescription = "⚠️ I haven't received any audio from anyone!";
-        this.sendWarning(
-          "I haven't received any audio from anyone in this recording, try switching to a different voice region if this problem persists.",
-          false
-        );
-        await this.stop();
-      } else if (this.unusedMinutes === 5 && !this.silenceWarned) {
-        this.silenceWarned = true;
-        this.sendWarning(
-          "Hello? I haven't heard anything for five minutes. Make sure to stop the recording if you are done! If you are taking a break, disregard this message."
-        );
-      }
-    }, 60000);
-
     this.active = true;
     this.started = true;
     await this.playNowRecording();
@@ -307,7 +277,6 @@ export default class Recording {
   async stop(internal = false, userID?: string) {
     try {
       clearTimeout(this.timeout);
-      clearInterval(this.usageInterval);
       this.active = false;
       this.recorder.logger.info(
         `Stopping recording ${this.id} by ${this.user.username}#${this.user.discriminator} (${this.user.id})${internal ? ' internally' : ''}${
